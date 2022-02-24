@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"github.com/d-ulyanov/kafka-sniffer/metrics"
+	"github.com/bingoohuang/kafka-sniffer/metrics"
 )
 
 // RequiredAcks is used in Produce Requests to tell the broker how many replica acknowledgements

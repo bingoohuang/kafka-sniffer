@@ -6,8 +6,8 @@ import (
 	"io"
 	"log"
 
-	"github.com/d-ulyanov/kafka-sniffer/kafka"
-	"github.com/d-ulyanov/kafka-sniffer/metrics"
+	"github.com/bingoohuang/kafka-sniffer/kafka"
+	"github.com/bingoohuang/kafka-sniffer/metrics"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/tcpassembly"
@@ -27,7 +27,7 @@ func NewKafkaStreamFactory(metricsStorage *metrics.Storage, verbose bool) *Kafka
 
 // New assembles new stream
 func (h *KafkaStreamFactory) New(net, transport gopacket.Flow) tcpassembly.Stream {
-	s := &KafkaStream{
+	s := &kafkaStream{
 		net:            net,
 		transport:      transport,
 		r:              tcpreader.NewReaderStream(),
@@ -40,15 +40,15 @@ func (h *KafkaStreamFactory) New(net, transport gopacket.Flow) tcpassembly.Strea
 	return &s.r
 }
 
-// KafkaStream will handle the actual decoding of http requests.
-type KafkaStream struct {
+// kafkaStream will handle the actual decoding of http requests.
+type kafkaStream struct {
 	net, transport gopacket.Flow
 	r              tcpreader.ReaderStream
 	metricsStorage *metrics.Storage
 	verbose        bool
 }
 
-func (h *KafkaStream) run() {
+func (h *kafkaStream) run() {
 	srcHost := fmt.Sprint(h.net.Src())
 	srcPort := fmt.Sprint(h.transport.Src())
 	dstHost := fmt.Sprint(h.net.Dst())
@@ -91,7 +91,7 @@ func (h *KafkaStream) run() {
 		case *kafka.ProduceRequest:
 			for _, topic := range body.ExtractTopics() {
 				if h.verbose {
-					log.Printf("client %s:%s wrote to topic %s", srcHost, srcPort, topic)
+					log.Printf("client %s:%s wrote to topic %s", h.net.Src(), h.transport.Src(), topic)
 				}
 
 				// add producer and topic relation info into metric

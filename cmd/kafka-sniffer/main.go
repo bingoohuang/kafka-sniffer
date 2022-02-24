@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/d-ulyanov/kafka-sniffer/metrics"
-	"github.com/d-ulyanov/kafka-sniffer/stream"
+	"github.com/bingoohuang/kafka-sniffer/metrics"
+	"github.com/bingoohuang/kafka-sniffer/stream"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
@@ -19,19 +19,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	defaultListenAddr = ":9870"
-	defaultExpireTime = 5 * time.Minute
-)
-
 var (
 	iface      = flag.String("i", "eth0", "Interface to get packets from")
 	dstport    = flag.Uint("p", 9092, "Kafka broker port")
-	snaplen    = flag.Int("s", 16<<10, "SnapLen for pcap packet capture")
-	filter     = fmt.Sprintf("tcp and dst port %d", *dstport)
+	snaplen    = flag.Int("snap", 16<<10, "SnapLen for pcap packet capture")
 	verbose    = flag.Bool("v", false, "Logs every packet in great detail")
-	listenAddr = flag.String("addr", defaultListenAddr, "Address on which sniffer listen the requests")
-	expireTime = flag.Duration("metrics.expire-time", defaultExpireTime, "Expiration time of metric.")
+	rwPrint    = flag.Bool("s", true, "Print the read and write clients")
+	listenAddr = flag.String("addr", "", "Address on which sniffer listen the requests, e.g. :9870")
+	expireTime = flag.Duration("metrics.expire-time", 5*time.Minute, "Expiration time of metric.")
 )
 
 func main() {
@@ -39,7 +34,9 @@ func main() {
 	log.Printf("starting capture on interface %q", *iface)
 
 	// run telemetry
-	go runTelemetry()
+	if *listenAddr != "" {
+		go runTelemetry()
+	}
 
 	// Set up pcap packet capture
 	handle, err := pcap.OpenLive(*iface, int32(*snaplen), true, pcap.BlockForever)
@@ -47,6 +44,7 @@ func main() {
 		panic(err)
 	}
 
+	filter := fmt.Sprintf("tcp and dst port %d", *dstport)
 	if err := handle.SetBPFFilter(filter); err != nil {
 		panic(err)
 	}
@@ -55,7 +53,13 @@ func main() {
 	metricsStorage := metrics.NewStorage(prometheus.DefaultRegisterer, *expireTime)
 
 	// Set up assembly
-	streamPool := tcpassembly.NewStreamPool(stream.NewKafkaStreamFactory(metricsStorage, *verbose))
+	var f tcpassembly.StreamFactory
+	if *rwPrint {
+		f = stream.NewKafkaStreamClientPrintFactory()
+	} else {
+		f = stream.NewKafkaStreamFactory(metricsStorage, *verbose)
+	}
+	streamPool := tcpassembly.NewStreamPool(f)
 	assembler := tcpassembly.NewAssembler(streamPool)
 
 	// Auto-flushing connection state to get packets
@@ -63,7 +67,9 @@ func main() {
 	assembler.MaxBufferedPagesTotal = 1000
 	assembler.MaxBufferedPagesPerConnection = 1
 
-	log.Println("reading in packets")
+	if *verbose {
+		log.Println("reading in packets")
+	}
 
 	// Read in packets, pass to assembler.
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
@@ -72,26 +78,29 @@ func main() {
 
 	for {
 		select {
-		case packet := <-packets:
+		case p := <-packets:
 			if *verbose {
-				log.Println(packet)
+				log.Println(p)
 			}
 
-			if packet.NetworkLayer() == nil || packet.TransportLayer() == nil || packet.TransportLayer().LayerType() != layers.LayerTypeTCP {
+			n := p.NetworkLayer()
+			t := p.TransportLayer()
+			if n == nil || t == nil || t.LayerType() != layers.LayerTypeTCP {
 				if *verbose {
 					log.Println("Unusable packet")
 				}
 				continue
 			}
 
-			tcp := packet.TransportLayer().(*layers.TCP)
-
-			assembler.AssembleWithTimestamp(packet.NetworkLayer().NetworkFlow(), tcp, packet.Metadata().Timestamp)
+			tcp := t.(*layers.TCP)
+			assembler.AssembleWithTimestamp(n.NetworkFlow(), tcp, p.Metadata().Timestamp)
 
 		case <-ticker:
 			// Every minute, flush connections that haven't seen activity in the past 2 minutes.
 			assembler.FlushOlderThan(time.Now().Add(time.Minute * -2))
-			log.Println("---- FLUSHING ----")
+			if *verbose {
+				log.Println("---- FLUSHING ----")
+			}
 		}
 	}
 }

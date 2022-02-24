@@ -1,0 +1,29 @@
+# gossh -c build.toml -e=1
+
+#printConfig = true
+#passphrase="xxxx"
+
+hosts = [
+    "footstone/{PBE}BX6qwkwV8yF-dBwoM4K7P4qK4ege4mhz@192.168.126.182 id=0",
+    "root/{BASE64}am5hPzIsMEE_NiZPRmhd@123.206.185.162:21063 id=1"
+]
+
+# 全部命令都默认成远程执行，相当于自动添加了%host标识。
+# globalRemote = true
+cmdTimeout = "30s"
+
+cmds = [
+    "date '+%Y%m%d%H%M%S' => @Today",
+    "echo 'kafka-sniffer' => @Name",
+    "rm -fr /tmp/@Name && rm -fr vendor && go mod download && go mod vendor", # "go mod vendor -v",
+    "cd .. && rm -fr @Name.tar.gz &&  tar czf @Name.tar.gz @Name",
+    "%host-0 %ul @Name.tar.gz @Name-src",
+    "%host-0 cd @Name-src",
+    "%host-0 rm -fr @Name",
+    "%host-0 tar zxf @Name.tar.gz --warning=no-timestamp --exclude .git",
+    "%host-0 cd @Name", # "%host go build -v -x -mod vendor -o rigaga  -ldflags=' -w -s -X main.branch=HEAD -X main.commit=@Today' ./cmd/rigaga",
+    "%host-0 go build -mod vendor -o @Name  -ldflags='-w -s' ./cmd/@Name",
+    "%host-0 upx @Name",
+    "%host-0 %dl @Name-src/@Name/@Name /tmp",
+    "%host-1 %ul /tmp/@Name /usr/local/bin/",
+]

@@ -5,7 +5,7 @@ GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null || echo 'unkn
 TARGET := kafka_sniffer
 TARGET_PATH := cmd/sniffer/main.go
 
-REPO_PATH := github.com/d-ulyanov/kafka-sniffer
+REPO_PATH := github.com/bingoohuang/kafka-sniffer
 LDFLAGS := -X $(REPO_PATH)/version.Version=$(GIT_SUMMARY)
 LDFLAGS += -X $(REPO_PATH)/version.Revision=$(GIT_REVISION)
 LDFLAGS += -X $(REPO_PATH)/version.Branch=$(GIT_BRANCH)
