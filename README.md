@@ -114,6 +114,8 @@ And probably you'll need to add this row to `/etc/hosts`
 
 ### demo1client
 
+![image](https://user-images.githubusercontent.com/1940588/155554492-f319b5bb-b50c-47e5-b19d-5e1a2d23e119.png)
+
 ```sh
 # gurl :9870/client
 Conn-Session: 127.0.0.1:44828->127.0.0.1:9870 (reused: false, wasIdle: false, idle: 0s)
