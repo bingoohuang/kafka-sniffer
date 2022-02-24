@@ -21,22 +21,19 @@ import (
 
 var (
 	iface      = flag.String("i", "eth0", "Interface to get packets from")
-	dstport    = flag.Uint("p", 9092, "Kafka broker port")
+	bpf        = flag.String("bpf", "tcp and dst port 9092", "BPF expr")
 	snaplen    = flag.Int("snap", 16<<10, "SnapLen for pcap packet capture")
 	verbose    = flag.Bool("v", false, "Logs every packet in great detail")
 	rwPrint    = flag.Bool("s", true, "Print the read and write clients")
-	listenAddr = flag.String("addr", "", "Address on which sniffer listen the requests, e.g. :9870")
+	listenAddr = flag.String("addr", ":9870", "Address on which sniffer listen the requests, e.g. :9870")
 	expireTime = flag.Duration("metrics.expire-time", 5*time.Minute, "Expiration time of metric.")
+
+	clientStat *stream.ClientStat
 )
 
 func main() {
 	defer util.Run()()
 	log.Printf("starting capture on interface %q", *iface)
-
-	// run telemetry
-	if *listenAddr != "" {
-		go runTelemetry()
-	}
 
 	// Set up pcap packet capture
 	handle, err := pcap.OpenLive(*iface, int32(*snaplen), true, pcap.BlockForever)
@@ -44,8 +41,7 @@ func main() {
 		panic(err)
 	}
 
-	filter := fmt.Sprintf("tcp and dst port %d", *dstport)
-	if err := handle.SetBPFFilter(filter); err != nil {
+	if err := handle.SetBPFFilter(*bpf); err != nil {
 		panic(err)
 	}
 
@@ -55,10 +51,14 @@ func main() {
 	// Set up assembly
 	var f tcpassembly.StreamFactory
 	if *rwPrint {
-		f = stream.NewKafkaStreamClientPrintFactory()
+		clientStat = stream.NewClientStat()
+		f = stream.NewKafkaStreamClientPrintFactory(clientStat)
 	} else {
 		f = stream.NewKafkaStreamFactory(metricsStorage, *verbose)
 	}
+
+	go runTelemetry()
+
 	streamPool := tcpassembly.NewStreamPool(f)
 	assembler := tcpassembly.NewAssembler(streamPool)
 
@@ -109,6 +109,10 @@ func runTelemetry() {
 	fmt.Printf("serving metrics on %s\n", *listenAddr)
 
 	http.Handle("/metrics", promhttp.Handler())
+	if clientStat != nil {
+		http.Handle("/client", stream.ServeClientStatHandler(clientStat))
+	}
+
 	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		panic(err)
 	}

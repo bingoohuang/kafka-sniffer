@@ -14,7 +14,8 @@ Kafka protocol: https://kafka.apache.org/protocol
 
 ## changes
 
-1. 2022-02-24 Print clients of `kafka.ProduceRequest` and `kafka.FetchRequest`.
+1. 2022-02-24 add `/client` API to get the result of client statistics, See the [demo](#demo1client).
+2. 2022-02-24 Print clients of `kafka.ProduceRequest` and `kafka.FetchRequest`, see the [demo](#demo1).
 
 ## example
 
@@ -86,10 +87,10 @@ And probably you'll need to add this row to `/etc/hosts`
 127.0.0.1   my-cluster-kafka-0.my-cluster-kafka-brokers.kafka.svc
 ```
 
-## demo
+## demo1
 
 ```sh
-[root@beta19 ~]# kafka-sniffer
+# kafka-sniffer
 2022/02/24 13:34:42 starting capture on interface "eth0"
 2022/02/24 13:34:42 client 192.1.1.15:61285-192.1.1.14:9092 type: *kafka.FetchRequest topic [dev-logcenter], correlationID: 117377425, clientID: sarama
 2022/02/24 13:34:42 client 192.1.1.15:37953-192.1.1.14:9092 type: *kafka.ProduceRequest topic [dev-metrics], correlationID: 6003063, clientID: sarama
@@ -109,4 +110,70 @@ And probably you'll need to add this row to `/etc/hosts`
 2022/02/24 13:34:42 client 192.1.1.4:6654-192.1.1.14:9092 type: *kafka.FetchRequest topic [count_transaction], correlationID: 572423, clientID: consumer-1
 2022/02/24 13:34:42 client 192.1.1.4:48249-192.1.1.14:9092 type: *kafka.FetchRequest topic [transaction], correlationID: 8692411, clientID: consumer-11
 2022/02/24 13:34:42 client 192.1.9.23:33500-192.1.1.14:9092 type: *kafka.FetchRequest topic [verif_supplement_file_v1], correlationID: 117992, clientID: consumer-2
+```
+
+### demo1client
+
+```sh
+# gurl :9870/client
+Conn-Session: 127.0.0.1:44828->127.0.0.1:9870 (reused: false, wasIdle: false, idle: 0s)
+GET /client? HTTP/1.1
+Host: 127.0.0.1:9870
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Thu, 24 Feb 2022 06:30:03 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Thu, 24 Feb 2022 06:30:03 GMT
+
+[
+  {
+    "Start": "2022-02-24T14:29:19.049701376+08:00",
+    "Client": "192.1.6.17:51404",
+    "ReqType": "*kafka.FetchRequest",
+    "ClientID": "consumer-1",
+    "Requests": 89,
+    "BytesRead": 7387,
+    "Topics": [
+      "dev-ids"
+    ]
+  },
+  {
+    "Start": "2022-02-24T14:29:19.025437041+08:00",
+    "Client": "192.1.8.12:6267",
+    "ReqType": "*kafka.FetchRequest",
+    "ClientID": "consumer-2",
+    "Requests": 89,
+    "BytesRead": 7031,
+    "Topics": [
+      "judicial_disaster"
+    ]
+  },
+  {
+    "Start": "2022-02-24T14:29:20.301435997+08:00",
+    "Client": "192.1.6.15:56324",
+    "ReqType": "*kafka.ProduceRequest",
+    "ClientID": "sarama",
+    "Requests": 309,
+    "BytesRead": 123625,
+    "Topics": [
+      "dev-metrics"
+    ]
+  },
+  {
+    "Start": "2022-02-24T14:29:20.84427283+08:00",
+    "Client": "192.1.6.4:54598",
+    "ReqType": "*kafka.ProduceRequest",
+    "ClientID": "sarama",
+    "Requests": 283,
+    "BytesRead": 113472,
+    "Topics": [
+      "dev-metrics"
+    ]
+  }
+]
 ```
