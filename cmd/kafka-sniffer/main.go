@@ -28,6 +28,8 @@ var (
 	listenAddr = flag.String("addr", ":9870", "Address on which sniffer listen the requests, e.g. :9870")
 	expireTime = flag.Duration("metrics.expire-time", 5*time.Minute, "Expiration time of metric.")
 
+	printJsonDuration = flag.Duration("p", 0, "Print the request json")
+
 	clientStat *stream.ClientStat
 )
 
@@ -52,7 +54,7 @@ func main() {
 	var f tcpassembly.StreamFactory
 	if *rwPrint {
 		clientStat = stream.NewClientStat()
-		f = stream.NewKafkaStreamClientPrintFactory(clientStat)
+		f = stream.NewKafkaStreamClientPrintFactory(clientStat, *printJsonDuration)
 	} else {
 		f = stream.NewKafkaStreamFactory(metricsStorage, *verbose)
 	}

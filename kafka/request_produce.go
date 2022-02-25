@@ -17,7 +17,7 @@ type ProduceRequest struct {
 	RequiredAcks    RequiredAcks
 	Timeout         int32
 	Version         int16 // v1 requires Kafka 0.9, v2 requires Kafka 0.10, v3 requires Kafka 0.11
-	records         map[string]map[int32]Records
+	Records         map[string]map[int32]Records
 }
 
 // Decode decodes kafka produce request from packet
@@ -47,7 +47,7 @@ func (r *ProduceRequest) Decode(pd PacketDecoder, version int16) error {
 		return nil
 	}
 
-	r.records = make(map[string]map[int32]Records)
+	r.Records = make(map[string]map[int32]Records)
 	for i := 0; i < topicCount; i++ {
 		topic, err := pd.getString()
 		if err != nil {
@@ -57,7 +57,7 @@ func (r *ProduceRequest) Decode(pd PacketDecoder, version int16) error {
 		if err != nil {
 			return err
 		}
-		r.records[topic] = make(map[int32]Records)
+		r.Records[topic] = make(map[int32]Records)
 
 		for j := 0; j < partitionCount; j++ {
 			partition, err := pd.getInt32()
@@ -78,7 +78,7 @@ func (r *ProduceRequest) Decode(pd PacketDecoder, version int16) error {
 			if err := records.decode(recordsDecoder); err != nil {
 				return err
 			}
-			r.records[topic][partition] = records
+			r.Records[topic][partition] = records
 		}
 	}
 
@@ -95,20 +95,20 @@ func (r *ProduceRequest) version() int16 {
 
 // ExtractTopics returns topics list
 func (r *ProduceRequest) ExtractTopics() []string {
-	out := make([]string, 0, len(r.records))
+	out := make([]string, 0, len(r.Records))
 
-	for topic := range r.records {
+	for topic := range r.Records {
 		out = append(out, topic)
 	}
 
 	return out
 }
 
-// RecordsLen retrieves total size in bytes of all records in message
+// RecordsLen retrieves total size in bytes of all Records in message
 func (r *ProduceRequest) RecordsLen() (recordsLen int) {
-	for _, partition := range r.records {
+	for _, partition := range r.Records {
 		for _, record := range partition {
-			switch record.recordsType {
+			switch record.RecordsType {
 			case legacyRecords:
 				recordsLen += len(record.MsgSet.Messages)
 			case defaultRecords:
@@ -119,11 +119,11 @@ func (r *ProduceRequest) RecordsLen() (recordsLen int) {
 	return
 }
 
-// RecordsSize retrieves total number of records in batch
+// RecordsSize retrieves total number of Records in batch
 func (r *ProduceRequest) RecordsSize() (recordsSize int) {
-	for _, partition := range r.records {
+	for _, partition := range r.Records {
 		for _, record := range partition {
-			switch record.recordsType {
+			switch record.RecordsType {
 			case legacyRecords:
 				for _, msg := range record.MsgSet.Messages {
 					recordsSize += msg.Msg.compressedSize

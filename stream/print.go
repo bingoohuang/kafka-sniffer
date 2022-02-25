@@ -20,12 +20,13 @@ import (
 
 // KafkaStreamPrintFactory implements tcpassembly.StreamFactory
 type KafkaStreamPrintFactory struct {
-	stat *ClientStat
+	stat              *ClientStat
+	printJsonDuration time.Duration
 }
 
 // NewKafkaStreamClientPrintFactory assembles streams
-func NewKafkaStreamClientPrintFactory(stat *ClientStat) *KafkaStreamPrintFactory {
-	return &KafkaStreamPrintFactory{stat: stat}
+func NewKafkaStreamClientPrintFactory(stat *ClientStat, printJsonDuration time.Duration) *KafkaStreamPrintFactory {
+	return &KafkaStreamPrintFactory{stat: stat, printJsonDuration: printJsonDuration}
 }
 
 // New assembles new stream
@@ -36,15 +37,16 @@ func (h *KafkaStreamPrintFactory) New(net, transport gopacket.Flow) tcpassembly.
 		r:         tcpreader.NewReaderStream(),
 	}
 
-	go s.run(h.stat) // Important... we must guarantee that data from the reader stream is read.
+	go s.run(h.stat, h.printJsonDuration) // Important... we must guarantee that data from the reader stream is read.
 
 	return &s.r
 }
 
-func (h *kafkaStreamPrinter) run(stat *ClientStat) {
+func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Duration) {
 	buf := bufio.NewReaderSize(&h.r, 2<<15) // 65k
 	client := fmt.Sprintf("%s:%s", h.net.Src(), h.transport.Src())
 
+	start := time.Now()
 	for {
 		req, n, err := kafka.DecodeRequest(buf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
@@ -61,6 +63,14 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat) {
 			continue
 		}
 
+		if printJsonDuration > 0 && time.Since(start) > printJsonDuration {
+			start = time.Now()
+			jsonBody, _ := json.Marshal(req.Body)
+			log.Printf("client %s->%s:%s correlationID: %d, clientID: %s",
+				client, h.net.Dst(), h.transport.Dst(), req.CorrelationID, req.ClientID)
+			log.Printf("%s", jsonBody)
+		}
+
 		if t, ok := req.Body.(interface {
 			ExtractTopics() []string
 		}); ok {
@@ -71,7 +81,6 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat) {
 				// 服务器端在处理完请求后也会把同样的CorrelationId写到Response中，这样客户端就能把某个请求和响应对应起来了
 				log.Printf("client %s->%s:%s type: %s topic %s, correlationID: %d, clientID: %s",
 					client, h.net.Dst(), h.transport.Dst(), typ, topics, req.CorrelationID, req.ClientID)
-
 			}
 		}
 	}

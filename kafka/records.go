@@ -12,7 +12,7 @@ const (
 
 // Records implements a union type containing either a RecordBatch or a legacy MessageSet.
 type Records struct {
-	recordsType int
+	RecordsType int
 	MsgSet      *MessageSet
 	RecordBatch *RecordBatch
 }
@@ -23,9 +23,9 @@ func (r *Records) setTypeFromMagic(pd PacketDecoder) error {
 		return err
 	}
 
-	r.recordsType = defaultRecords
+	r.RecordsType = defaultRecords
 	if magic < 2 {
-		r.recordsType = legacyRecords
+		r.RecordsType = legacyRecords
 	}
 
 	return nil
@@ -36,13 +36,13 @@ func magicValue(pd PacketDecoder) (int8, error) {
 }
 
 func (r *Records) decode(pd PacketDecoder) error {
-	if r.recordsType == unknownRecords {
+	if r.RecordsType == unknownRecords {
 		if err := r.setTypeFromMagic(pd); err != nil {
 			return err
 		}
 	}
 
-	switch r.recordsType {
+	switch r.RecordsType {
 	case legacyRecords:
 		r.MsgSet = &MessageSet{}
 		return r.MsgSet.Decode(pd)
@@ -50,5 +50,5 @@ func (r *Records) decode(pd PacketDecoder) error {
 		r.RecordBatch = &RecordBatch{}
 		return r.RecordBatch.decode(pd)
 	}
-	return fmt.Errorf("unknown records type: %v", r.recordsType)
+	return fmt.Errorf("unknown Records type: %v", r.RecordsType)
 }

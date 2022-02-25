@@ -19,7 +19,7 @@ func (e recordsArray) Decode(pd PacketDecoder) error {
 	return nil
 }
 
-// RecordBatch are records from one kafka request
+// RecordBatch are Records from one kafka request
 type RecordBatch struct {
 	FirstOffset           int64
 	PartitionLeaderEpoch  int32
@@ -38,7 +38,7 @@ type RecordBatch struct {
 	PartialTrailingRecord bool
 	IsTransactional       bool
 
-	recordsLen int // uncompressed records size
+	recordsLen int // uncompressed Records size
 }
 
 func (b *RecordBatch) decode(pd PacketDecoder) (err error) {
