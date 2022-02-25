@@ -32,6 +32,11 @@ const (
 // CompressionCodec represents the various compression codecs recognized by Kafka in messages.
 type CompressionCodec int8
 
+// MarshalJSON marshals the CompressionCodec a json representation.
+func (cc CompressionCodec) MarshalJSON() ([]byte, error) {
+	return []byte(cc.String()), nil
+}
+
 // String returns string representation of CompressionCodec
 func (cc CompressionCodec) String() string {
 	return []string{
