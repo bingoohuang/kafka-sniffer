@@ -63,12 +63,18 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Durati
 			continue
 		}
 
-		if printJsonDuration > 0 && time.Since(start) > printJsonDuration {
-			start = time.Now()
-			jsonBody, _ := json.Marshal(req.Body)
-			log.Printf("client %s->%s:%s correlationID: %d, clientID: %s",
-				client, h.net.Dst(), h.transport.Dst(), req.CorrelationID, req.ClientID)
-			log.Printf("%s", jsonBody)
+		if pr, ok := req.Body.(*kafka.ProduceRequest); ok {
+			if printJsonDuration > 0 && time.Since(start) > printJsonDuration {
+				start = time.Now()
+
+				log.Printf("client %s->%s:%s correlationID: %d, clientID: %s",
+					client, h.net.Dst(), h.transport.Dst(), req.CorrelationID, req.ClientID)
+				if jsonBody, err := json.Marshal(pr); err != nil {
+					log.Printf("json marshal failed: %s", err)
+				} else {
+					log.Printf("ProduceRequest: %s", jsonBody)
+				}
+			}
 		}
 
 		if t, ok := req.Body.(interface {

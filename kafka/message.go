@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -34,7 +35,7 @@ type CompressionCodec int8
 
 // MarshalJSON marshals the CompressionCodec a json representation.
 func (cc CompressionCodec) MarshalJSON() ([]byte, error) {
-	return []byte(cc.String()), nil
+	return json.Marshal(cc.String())
 }
 
 // String returns string representation of CompressionCodec
