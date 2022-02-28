@@ -86,29 +86,31 @@ func (h *kafkaStreamPrinter) run() {
 		}
 
 		typ := reflect.TypeOf(r.Body).String()
+		isPrintType := strings.Contains(strings.ToLower(typ), h.factory.printType)
 
 		if t, ok := r.Body.(interface {
 			ExtractTopics() []string
 		}); ok {
 			topics := t.ExtractTopics()
 			if h.factory.ClientStat.Stat(src, dst, r.ClientID, typ, topics, n) {
-				// CorrelationId，int32类型，由客户端指定的一个数字唯一标示这次请求的id，
-				// 服务器端在处理完请求后也会把同样的CorrelationId写到Response中，这样客户端就能把某个请求和响应对应起来了
-				log.Printf("conn: %s -> %s, type: %s topics: %s, correlationID: %d, clientID: %s",
-					src, dst, typ, topics, r.CorrelationID, r.ClientID)
+				if isPrintType {
+					// CorrelationId，int32类型，由客户端指定的一个数字唯一标示这次请求的id，
+					// 服务器端在处理完请求后也会把同样的CorrelationId写到Response中，这样客户端就能把某个请求和响应对应起来了
+					log.Printf("conn: %s -> %s, type: %s topics: %s, correlationID: %d, clientID: %s",
+						src, dst, typ, topics, r.CorrelationID, r.ClientID)
+				}
 			}
 		}
 
-		if strings.Contains(strings.ToLower(typ), h.factory.printType) {
+		if isPrintType {
 			if h.factory.printJsonDuration > 0 && time.Since(start) > h.factory.printJsonDuration {
 				start = time.Now()
 
-				log.Printf("conn: %s -> %s, correlationID: %d, clientID: %s",
-					src, dst, r.CorrelationID, r.ClientID)
+				log.Printf("conn: %s -> %s, correlationID: %d, clientID: %s", src, dst, r.CorrelationID, r.ClientID)
 				if b, err := json.Marshal(r.Body); err != nil {
 					log.Printf("json marshal failed: %s", err)
 				} else {
-					log.Printf("ProduceRequest: %s", b)
+					log.Printf("%s: %s", typ, b)
 				}
 			}
 		}
