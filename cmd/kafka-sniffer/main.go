@@ -35,6 +35,7 @@ var (
 )
 
 func init() {
+	flag.Parse()
 	log.SetOutput(os.Stdout)
 }
 
