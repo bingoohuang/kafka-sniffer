@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,40 +19,46 @@ import (
 	"github.com/google/gopacket/tcpassembly/tcpreader"
 )
 
-// KafkaStreamPrintFactory implements tcpassembly.StreamFactory
-type KafkaStreamPrintFactory struct {
-	stat              *ClientStat
+// KafkaPrintStreamFactory implements tcpassembly.StreamFactory
+type KafkaPrintStreamFactory struct {
+	ClientStat        *ClientStat
 	printJsonDuration time.Duration
+	printType         string
 }
 
-// NewKafkaStreamClientPrintFactory assembles streams
-func NewKafkaStreamClientPrintFactory(stat *ClientStat, printJsonDuration time.Duration) *KafkaStreamPrintFactory {
-	return &KafkaStreamPrintFactory{stat: stat, printJsonDuration: printJsonDuration}
+// NewKafkaClientPrintStreamFactory assembles streams
+func NewKafkaClientPrintStreamFactory(printJsonDuration time.Duration, printType string) *KafkaPrintStreamFactory {
+	return &KafkaPrintStreamFactory{
+		ClientStat:        NewClientStat(),
+		printJsonDuration: printJsonDuration,
+		printType:         strings.ToLower(printType),
+	}
 }
 
 // New assembles new stream
-func (h *KafkaStreamPrintFactory) New(net, transport gopacket.Flow) tcpassembly.Stream {
+func (h *KafkaPrintStreamFactory) New(net, transport gopacket.Flow) tcpassembly.Stream {
 	s := &kafkaStreamPrinter{
 		net:       net,
 		transport: transport,
 		r:         tcpreader.NewReaderStream(),
+		factory:   h,
 	}
 
-	go s.run(h.stat, h.printJsonDuration) // Important... we must guarantee that data from the reader stream is read.
+	go s.run() // Important... we must guarantee that data from the reader stream is read.
 
 	return &s.r
 }
 
-func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Duration) {
+func (h *kafkaStreamPrinter) run() {
 	buf := bufio.NewReaderSize(&h.r, 2<<15) // 65k
 	src := fmt.Sprintf("%s:%s", h.net.Src(), h.transport.Src())
 	dst := fmt.Sprintf("%s:%s", h.net.Dst(), h.transport.Dst())
 
 	start := time.Now()
 	for {
-		req, n, err := kafka.DecodeRequest(buf)
+		r, n, err := kafka.DecodeRequest(buf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			log.Printf("client %s -> %s EOF", src, dst)
+			log.Printf("conn: %s -> %s EOF", src, dst)
 			return
 		}
 
@@ -65,30 +72,31 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Durati
 			continue
 		}
 
-		if pr, ok := req.Body.(*kafka.ProduceRequest); ok {
-			if printJsonDuration > 0 && time.Since(start) > printJsonDuration {
-				start = time.Now()
+		typ := reflect.TypeOf(r.Body).String()
 
-				log.Printf("client %s -> %s correlationID: %d, clientID: %s", src, dst,
-					req.CorrelationID, req.ClientID)
-				if jsonBody, err := json.Marshal(pr); err != nil {
-					log.Printf("json marshal failed: %s", err)
-				} else {
-					log.Printf("ProduceRequest: %s", jsonBody)
-				}
-			}
-		}
-
-		if t, ok := req.Body.(interface {
+		if t, ok := r.Body.(interface {
 			ExtractTopics() []string
 		}); ok {
 			topics := t.ExtractTopics()
-			typ := reflect.TypeOf(req.Body).String()
-			if stat.Stat(src, req.ClientID, typ, topics, n) {
+			if h.factory.ClientStat.Stat(src, r.ClientID, typ, topics, n) {
 				// CorrelationId，int32类型，由客户端指定的一个数字唯一标示这次请求的id，
 				// 服务器端在处理完请求后也会把同样的CorrelationId写到Response中，这样客户端就能把某个请求和响应对应起来了
-				log.Printf("client %s -> %s type: %s topic %s, correlationID: %d, clientID: %s",
-					src, dst, typ, topics, req.CorrelationID, req.ClientID)
+				log.Printf("conn: %s -> %s, type: %s topics: %s, correlationID: %d, clientID: %s",
+					src, dst, typ, topics, r.CorrelationID, r.ClientID)
+			}
+		}
+
+		if strings.Contains(strings.ToLower(typ), h.factory.printType) {
+			if h.factory.printJsonDuration > 0 && time.Since(start) > h.factory.printJsonDuration {
+				start = time.Now()
+
+				log.Printf("conn: %s -> %s, correlationID: %d, clientID: %s",
+					src, dst, r.CorrelationID, r.ClientID)
+				if b, err := json.Marshal(r.Body); err != nil {
+					log.Printf("json marshal failed: %s", err)
+				} else {
+					log.Printf("ProduceRequest: %s", b)
+				}
 			}
 		}
 	}
@@ -98,6 +106,7 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Durati
 type kafkaStreamPrinter struct {
 	net, transport gopacket.Flow
 	r              tcpreader.ReaderStream
+	factory        *KafkaPrintStreamFactory
 }
 
 type ReqTypeStatItemSnapshot struct {

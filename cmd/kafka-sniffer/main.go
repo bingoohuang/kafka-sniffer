@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +20,7 @@ import (
 )
 
 var (
+	pType      = flag.String("t", "", "req types filter, e.g. FetchRequest, ProduceRequest")
 	iface      = flag.String("i", "eth0", "Interface to get packets from")
 	bpf        = flag.String("bpf", "tcp and dst port 9092", "BPF expr")
 	snaplen    = flag.Int("snap", 16<<10, "SnapLen for pcap packet capture")
@@ -59,8 +59,9 @@ func main() {
 	// Set up assembly
 	var f tcpassembly.StreamFactory
 	if *rwPrint {
-		clientStat = stream.NewClientStat()
-		f = stream.NewKafkaStreamClientPrintFactory(clientStat, *printJsonDuration)
+		xf := stream.NewKafkaClientPrintStreamFactory(*printJsonDuration, *pType)
+		clientStat = xf.ClientStat
+		f = xf
 	} else {
 		f = stream.NewKafkaStreamFactory(metricsStorage, *verbose)
 	}
@@ -114,7 +115,7 @@ func main() {
 }
 
 func runTelemetry() {
-	fmt.Printf("serving metrics on %s\n", *listenAddr)
+	log.Printf("serving metrics and api on %s\n", *listenAddr)
 
 	http.Handle("/metrics", promhttp.Handler())
 	if clientStat != nil {

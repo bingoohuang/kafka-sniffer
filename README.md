@@ -92,24 +92,24 @@ And probably you'll need to add this row to `/etc/hosts`
 ```sh
 # kafka-sniffer
 2022/02/24 13:34:42 starting capture on interface "eth0"
-2022/02/24 13:34:42 client 192.1.1.15:61285-192.1.1.14:9092 type: *kafka.FetchRequest topic [dev-logcenter], correlationID: 117377425, clientID: sarama
-2022/02/24 13:34:42 client 192.1.1.15:37953-192.1.1.14:9092 type: *kafka.ProduceRequest topic [dev-metrics], correlationID: 6003063, clientID: sarama
-2022/02/24 13:34:42 client 192.1.1.11:24717-192.1.1.14:9092 type: *kafka.FetchRequest topic [dev-metrics], correlationID: 196489671, clientID: sarama
-2022/02/24 13:34:42 client 192.1.1.7:37233-192.1.1.14:9092 type: *kafka.FetchRequest topic [__consumer_offsets], correlationID: 247189, clientID: consumer-KMOffsetCache-cmak-548974c6c4-sxvgt-1723
-2022/02/24 13:34:42 client 192.1.6.17:51404-192.1.1.14:9092 type: *kafka.FetchRequest topic [dev-ids], correlationID: 6716609, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.9.23:36866-192.1.1.14:9092 type: *kafka.FetchRequest topic [bq_disaster_recovery], correlationID: 623626, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.7:34038-192.1.1.14:9092 type: *kafka.FetchRequest topic [agent_transaction], correlationID: 12480162, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.4:55214-192.1.1.14:9092 type: *kafka.FetchRequest topic [dev-cloudSignLogServer], correlationID: 3341672, clientID: 2428545257036493
-2022/02/24 13:34:42 client 192.1.1.12:6267-192.1.1.14:9092 type: *kafka.FetchRequest topic [judicial_disaster], correlationID: 9009620, clientID: consumer-2
-2022/02/24 13:34:42 client 192.1.1.11:33378-192.1.1.14:9092 type: *kafka.ProduceRequest topic [dev-gateway], correlationID: 10948681, clientID: producer-1
-2022/02/24 13:34:42 client 192.1.1.12:9195-192.1.1.14:9092 type: *kafka.FetchRequest topic [judicial-2tripartite], correlationID: 9011202, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.12:41426-192.1.1.14:9092 type: *kafka.FetchRequest topic [agent_count_transaction], correlationID: 194647, clientID: consumer-11
-2022/02/24 13:34:42 client 192.1.1.11:22615-192.1.1.14:9092 type: *kafka.FetchRequest topic [ids-message-record-1], correlationID: 8999184, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.12:20394-192.1.1.14:9092 type: *kafka.FetchRequest topic [count_transaction_pro], correlationID: 3240311, clientID: consumer-11
-2022/02/24 13:34:42 client 192.1.1.12:7273-192.1.1.14:9092 type: *kafka.FetchRequest topic [transaction_pro], correlationID: 3240395, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.4:6654-192.1.1.14:9092 type: *kafka.FetchRequest topic [count_transaction], correlationID: 572423, clientID: consumer-1
-2022/02/24 13:34:42 client 192.1.1.4:48249-192.1.1.14:9092 type: *kafka.FetchRequest topic [transaction], correlationID: 8692411, clientID: consumer-11
-2022/02/24 13:34:42 client 192.1.9.23:33500-192.1.1.14:9092 type: *kafka.FetchRequest topic [verif_supplement_file_v1], correlationID: 117992, clientID: consumer-2
+2022/02/24 13:34:42 conn: 192.1.1.15:61285 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [dev-logcenter], correlationID: 117377425, clientID: sarama
+2022/02/24 13:34:42 conn: 192.1.1.15:37953 -> 192.1.1.14:9092 type: *kafka.ProduceRequest topics: [dev-metrics], correlationID: 6003063, clientID: sarama
+2022/02/24 13:34:42 conn: 192.1.1.11:24717 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [dev-metrics], correlationID: 196489671, clientID: sarama
+2022/02/24 13:34:42 conn: 192.1.1.7:37233 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [__consumer_offsets], correlationID: 247189, clientID: consumer-KMOffsetCache-cmak-548974c6c4-sxvgt-1723
+2022/02/24 13:34:42 conn: 192.1.6.17:51404 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [dev-ids], correlationID: 6716609, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.9.23:36866 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [bq_disaster_recovery], correlationID: 623626, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.7:34038 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [agent_transaction], correlationID: 12480162, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.4:55214 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [dev-cloudSignLogServer], correlationID: 3341672, clientID: 2428545257036493
+2022/02/24 13:34:42 conn: 192.1.1.12:6267 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [judicial_disaster], correlationID: 9009620, clientID: consumer-2
+2022/02/24 13:34:42 conn: 192.1.1.11:33378 -> 192.1.1.14:9092 type: *kafka.ProduceRequest topics: [dev-gateway], correlationID: 10948681, clientID: producer-1
+2022/02/24 13:34:42 conn: 192.1.1.12:9195 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [judicial-2tripartite], correlationID: 9011202, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.12:41426 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [agent_count_transaction], correlationID: 194647, clientID: consumer-11
+2022/02/24 13:34:42 conn: 192.1.1.11:22615 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [ids-message-record-1], correlationID: 8999184, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.12:20394 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [count_transaction_pro], correlationID: 3240311, clientID: consumer-11
+2022/02/24 13:34:42 conn: 192.1.1.12:7273 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [transaction_pro], correlationID: 3240395, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.4:6654 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [count_transaction], correlationID: 572423, clientID: consumer-1
+2022/02/24 13:34:42 conn: 192.1.1.4:48249 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [transaction], correlationID: 8692411, clientID: consumer-11
+2022/02/24 13:34:42 conn: 192.1.9.23:33500 -> 192.1.1.14:9092 type: *kafka.FetchRequest topics: [verif_supplement_file_v1], correlationID: 117992, clientID: consumer-2
 ```
 
 ### demo1client
