@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/bingoohuang/kafka-sniffer/stream/flowd"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,7 @@ var (
 	snaplen    = flag.Int("snap", 16<<10, "SnapLen for pcap packet capture")
 	verbose    = flag.Bool("v", false, "Logs every packet in great detail")
 	rwPrint    = flag.Bool("s", true, "Print the read and write clients")
+	connTrack  = flag.Bool("flow", false, "Captures TCP/IP traffic and keeps conns track")
 	listenAddr = flag.String("addr", ":9870", "Address on which sniffer listen the requests, e.g. :9870")
 	expireTime = flag.Duration("metrics.expire-time", 5*time.Minute, "Expiration time of metric.")
 
@@ -44,6 +46,21 @@ func main() {
 
 	log.Printf("starting capture on interface %q", *iface)
 
+	if *connTrack {
+		handler, err := flowd.RunNetworkAnalyzer(*iface, *bpf, int32(*snaplen))
+		if err != nil {
+			log.Fatalf("failed to create network analyzer, err: %v", err)
+		}
+		log.Printf("start to captures TCP/IP traffic and keeps conns track, using bpf %q on device %q", *bpf, *iface)
+		http.HandleFunc("/flow", handler)
+	} else {
+		go handlerKafka()
+	}
+
+	runTelemetry()
+}
+
+func handlerKafka() {
 	// Set up pcap packet capture
 	handle, err := pcap.OpenLive(*iface, int32(*snaplen), true, pcap.BlockForever)
 	if err != nil {
@@ -67,8 +84,6 @@ func main() {
 		f = stream.NewKafkaStreamFactory(metricsStorage, *verbose)
 	}
 
-	go runTelemetry()
-
 	streamPool := tcpassembly.NewStreamPool(f)
 	assembler := tcpassembly.NewAssembler(streamPool)
 
@@ -82,8 +97,7 @@ func main() {
 	}
 
 	// Read in packets, pass to assembler.
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-	packets := packetSource.Packets()
+	packets := gopacket.NewPacketSource(handle, handle.LinkType()).Packets()
 	ticker := time.Tick(time.Minute)
 
 	for {
