@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/bingoohuang/kafka-sniffer/metrics"
@@ -33,8 +34,13 @@ var (
 	clientStat *stream.ClientStat
 )
 
+func init() {
+	log.SetOutput(os.Stdout)
+}
+
 func main() {
 	defer util.Run()()
+
 	log.Printf("starting capture on interface %q", *iface)
 
 	// Set up pcap packet capture

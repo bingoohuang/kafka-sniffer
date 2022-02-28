@@ -44,12 +44,14 @@ func (h *KafkaStreamPrintFactory) New(net, transport gopacket.Flow) tcpassembly.
 
 func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Duration) {
 	buf := bufio.NewReaderSize(&h.r, 2<<15) // 65k
-	client := fmt.Sprintf("%s:%s", h.net.Src(), h.transport.Src())
+	src := fmt.Sprintf("%s:%s", h.net.Src(), h.transport.Src())
+	dst := fmt.Sprintf("%s:%s", h.net.Dst(), h.transport.Dst())
 
 	start := time.Now()
 	for {
 		req, n, err := kafka.DecodeRequest(buf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			log.Printf("client %s -> %s EOF", src, dst)
 			return
 		}
 
@@ -67,8 +69,8 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Durati
 			if printJsonDuration > 0 && time.Since(start) > printJsonDuration {
 				start = time.Now()
 
-				log.Printf("client %s->%s:%s correlationID: %d, clientID: %s",
-					client, h.net.Dst(), h.transport.Dst(), req.CorrelationID, req.ClientID)
+				log.Printf("client %s -> %s correlationID: %d, clientID: %s", src, dst,
+					req.CorrelationID, req.ClientID)
 				if jsonBody, err := json.Marshal(pr); err != nil {
 					log.Printf("json marshal failed: %s", err)
 				} else {
@@ -82,11 +84,11 @@ func (h *kafkaStreamPrinter) run(stat *ClientStat, printJsonDuration time.Durati
 		}); ok {
 			topics := t.ExtractTopics()
 			typ := reflect.TypeOf(req.Body).String()
-			if stat.Stat(client, req.ClientID, typ, topics, n) {
+			if stat.Stat(src, req.ClientID, typ, topics, n) {
 				// CorrelationId，int32类型，由客户端指定的一个数字唯一标示这次请求的id，
 				// 服务器端在处理完请求后也会把同样的CorrelationId写到Response中，这样客户端就能把某个请求和响应对应起来了
-				log.Printf("client %s->%s:%s type: %s topic %s, correlationID: %d, clientID: %s",
-					client, h.net.Dst(), h.transport.Dst(), typ, topics, req.CorrelationID, req.ClientID)
+				log.Printf("client %s -> %s type: %s topic %s, correlationID: %d, clientID: %s",
+					src, dst, typ, topics, req.CorrelationID, req.ClientID)
 			}
 		}
 	}
