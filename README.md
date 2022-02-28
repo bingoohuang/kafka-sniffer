@@ -179,3 +179,31 @@ Date: Thu, 24 Feb 2022 06:30:03 GMT
   }
 ]
 ```
+
+## captures TCP/IP traffic and keeps conns track
+
+```sh
+# kafka-sniffer -flow
+2022/02/28 16:37:42 starting capture on interface "eth0"
+2022/02/28 16:37:42 start to captures TCP/IP traffic and keeps conns track, using bpf "tcp and dst port 9092" on device "eth0"
+2022/02/28 16:37:42 serving metrics and api on :9870
+```
+
+```sh
+# gurl :9870/flow -r
+Conn-Session: 127.0.0.1:36876->127.0.0.1:9870 (reused: false, wasIdle: false, idle: 0s)
+GET /flow? HTTP/1.1
+Host: 127.0.0.1:9870
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Mon, 28 Feb 2022 08:39:05 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Date: Mon, 28 Feb 2022 08:39:05 GMT
+
+{"Total":254,"Flows":[{"Src":"192.1.8.4:1592","Dst":"192.1.8.14:9092","PayloadSum":52,"Closed":false,"Update":"2022-02-28T16:38:44.274237328+08:00"},{"Src":"192.1.8.4:37234","Dst":"192.1.8.14:9092","PayloadSum":52,"Closed":false,"Update":"2022-02-28T16:38:44.275974959+08:00"},{"Src":"192.1.8.4:55852","Dst":"192.1.8.14:9092","PayloadSum":188647,"Closed":false,"Update":"2022-02-28T16:39:02.667679646+08:00"},{"Src":"192.1.8.12:43326","Dst":"192.1.8.14:9092","PayloadSum":225143,"Closed":false,"Update":"2022-02-28T16:39:03.678359898+08:00"},{"Src":"192.1.8.4:46099","Dst":"192.1.8.14:9092","PayloadSum":57,"Closed":false,"Update":"2022-02-28T16:38:44.362084935+08:00"},{"Src":"192.1.8.4:58497","Dst":"192.1.8.14:9092","PayloadSum":2430,"Closed":false,"Update":"2022-02-28T16:39:03.503698159+08:00"}]}
+```
