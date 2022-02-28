@@ -110,13 +110,13 @@ type kafkaStreamPrinter struct {
 }
 
 type ReqTypeStatItemSnapshot struct {
-	Start     time.Time
-	Client    string
-	ReqType   string
-	ClientID  string
-	Requests  int
-	BytesRead int
-	Topics    []string
+	Start      time.Time
+	Connection string
+	ReqType    string
+	ClientID   string
+	Requests   int
+	BytesRead  int
+	Topics     []string
 }
 
 type ReqTypeStatItem struct {
@@ -156,9 +156,10 @@ func (s *ClientStat) Stat(client, clientID, typ string, topics []string, n int) 
 	if !ok {
 		r = &ReqTypeStatItem{
 			ReqTypeStatItemSnapshot: ReqTypeStatItemSnapshot{
-				Start:  time.Now(),
-				Client: client, ClientID: clientID,
-				ReqType: typ,
+				Start:      time.Now(),
+				Connection: client,
+				ClientID:   clientID,
+				ReqType:    typ,
 			},
 			topicsMap: map[string]bool{}}
 		s.Map[k] = r
@@ -182,7 +183,7 @@ func ServeClientStatHandler(stat *ClientStat) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s := stat.Snapshot()
 		sort.SliceStable(s, func(i, j int) bool {
-			return s[i].Client < s[j].Client ||
+			return s[i].Connection < s[j].Connection ||
 				s[i].ReqType < s[j].ReqType ||
 				s[i].ClientID < s[j].ClientID
 		})
